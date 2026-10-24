@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lähihoitaja Study Lab</title>
+<title>Lähihoitaja Study Lab — Cloud Sync</title>
 <style>
 :root{--bg:#0b1718;--panel:#122426;--panel2:#172f31;--line:#294345;--text:#edf5f3;--muted:#9bb4b2;--mint:#73d4c9;--mint2:#b6f0e7;--pink:#efb9d0;--good:#83d7a5;--bad:#ff9d9d}
 *{box-sizing:border-box}html,body,.app,.panel,.question,.answers,.answer,.feedback,.vocab-list,.vocab-item,.modal,.modal *{ -webkit-user-select:text; user-select:text; }button,.letter,.pill,.progress,.tabs,.actions{ -webkit-user-select:none; user-select:none; }.answer,.answer *,.question,.question *{ -webkit-user-select:text !important; user-select:text !important; }body{margin:0;background:radial-gradient(ellipse at top,#173234 0,#0b1718 55%);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:#1b3638;color:var(--text);border-radius:12px;padding:10px 13px}button:hover{border-color:var(--mint)}button.primary{background:var(--mint);color:#082120;border-color:var(--mint);font-weight:750}button.ghost{background:transparent}button:disabled{opacity:.45;cursor:not-allowed}
@@ -14,6 +14,24 @@
 <body>
 <div class="app">
 <header class="top"><div class="brand"><div class="logo">L+</div><div><div class="eyebrow">PERSONAL STUDY SPACE</div><h1>Lähihoitaja Study Lab</h1><div class="sub">Học tiếng Phần Lan · Ôn tập · Từ vựng</div></div></div><button class="ghost" id="resetBtn" title="Xóa tiến độ bài làm hiện tại">Làm mới bài</button></header>
+<section class="card" id="cloudSyncCard" style="padding:17px;margin-bottom:18px">
+  <div class="headrow"><div><h2 style="font-size:20px;margin:0 0 5px">Đồng bộ Word Pool giữa iPad và laptop</h2><div class="muted small">Kết nối tài khoản riêng để lưu từ vựng trên đám mây. Dữ liệu của mỗi tài khoản được bảo vệ bằng chính sách truy cập riêng.</div></div><span class="pill" id="cloudStatus">Chưa cấu hình</span></div>
+  <details id="cloudSetupDetails" style="margin-top:14px"><summary style="cursor:pointer;color:var(--mint2);font-weight:700">Thiết lập kết nối Supabase (chỉ cần làm một lần trên mỗi trình duyệt)</summary>
+    <div class="setup" style="margin-bottom:0"><p class="small muted">Nhập Project URL và khóa publishable/anon của dự án Supabase. Chỉ dùng khóa public/anon — tuyệt đối không dán service_role hoặc secret key vào website.</p>
+      <label for="supabaseUrl">Supabase Project URL</label><input class="field" id="supabaseUrl" placeholder="https://your-project.supabase.co" autocomplete="url" style="margin:6px 0 12px">
+      <label for="supabaseKey">Publishable key hoặc anon public key</label><input class="field" id="supabaseKey" placeholder="sb_publishable_... hoặc eyJ... (anon public)" autocomplete="off" style="margin:6px 0 12px">
+      <div class="row"><button class="primary" id="saveSupabaseConfig">Lưu cấu hình</button><button id="forgetSupabaseConfig" class="ghost">Xóa cấu hình khỏi trình duyệt</button></div>
+    </div>
+  </details>
+  <div id="cloudAuthArea" style="margin-top:14px;display:none">
+    <div class="row" style="align-items:end">
+      <div style="flex:1;min-width:180px"><label for="cloudEmail">Email</label><input class="field" id="cloudEmail" type="email" autocomplete="email" placeholder="you@example.com" style="margin-top:5px"></div>
+      <div style="flex:1;min-width:180px"><label for="cloudPassword">Mật khẩu</label><input class="field" id="cloudPassword" type="password" autocomplete="current-password" placeholder="Ít nhất 8 ký tự" style="margin-top:5px"></div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="primary" id="cloudSignIn">Đăng nhập</button><button id="cloudSignUp">Tạo tài khoản</button><button id="cloudSignOut" class="ghost" style="display:none">Đăng xuất</button><button id="cloudSyncNow" style="display:none">Đồng bộ ngay</button></div>
+  </div>
+  <p id="cloudMessage" class="small muted" role="status" aria-live="polite" style="margin-bottom:0">Cần tạo dự án Supabase và bảng riêng tư trước khi bật đồng bộ.</p>
+</section>
 <nav class="tabs">
 <button class="active" data-view="study">Học & làm quiz</button><button data-view="vocabulary">Pool từ vựng <span id="vocabCount">0</span></button><button data-view="vocabquiz">Quiz từ vựng</button><button data-view="progress">Tiến độ</button>
 </nav>
@@ -27,7 +45,7 @@
 <div class="stat"><span>Từ đã lưu</span><strong id="sideVocab">0</strong></div>
 </div>
 <div class="tip">Mẹo: chạm vào từ Phần Lan có gạch chân để xem nghĩa, nghe phát âm và lưu vào pool từ vựng.</div>
-<div class="tip">Dữ liệu từ vựng và tiến độ được lưu trên trình duyệt của thiết bị này.</div>
+<div class="tip">Không đăng nhập: dữ liệu chỉ nằm trên thiết bị này. Đăng nhập: Word Pool được đồng bộ qua đám mây.</div>
 </aside>
 <main class="main">
 <section class="view active" id="study">
@@ -48,7 +66,7 @@
 <div id="vocabQuizArea"><div class="empty">Hãy lưu ít nhất một từ, sau đó bắt đầu quiz.</div></div>
 </section>
 <section class="view" id="progress">
-<h2>Tiến độ học tập</h2><p class="muted">Thống kê được ghi nhận trên thiết bị này.</p>
+<h2>Tiến độ học tập</h2><p class="muted">Thống kê được ghi nhận trên thiết bị này; Word Pool có thể đồng bộ giữa các thiết bị khi đăng nhập.</p>
 <div class="setup"><div class="stat"><span>Số lượt quiz hoàn thành</span><strong id="pSessions">0</strong></div><div class="stat"><span>Câu đã trả lời</span><strong id="pAnswered">0</strong></div><div class="stat"><span>Câu đúng</span><strong id="pCorrect">0</strong></div><div class="stat"><span>Tỉ lệ đúng</span><strong id="pRate">0%</strong></div></div>
 <button id="clearProgress" class="ghost">Xóa thống kê</button>
 </section>
@@ -56,6 +74,7 @@
 <div class="modalback" id="wordModal"><div class="modal"><div class="headrow"><div><span class="pill">TỪ VỰNG</span><input class="field" id="modalWordInput" placeholder="Từ tiếng Phần Lan" style="font-size:20px;font-weight:750;margin-top:9px"><div id="modalHint" class="muted small"></div></div><button id="closeModal">Đóng</button></div>
 <div style="margin-top:16px"><label class="small muted">Nghĩa tiếng Việt</label><input class="field" id="modalMeaning" placeholder="Nhập hoặc chỉnh sửa nghĩa"><label class="small muted">Ghi chú / ví dụ</label><textarea class="field" id="modalNote" placeholder="Ví dụ tiếng Phần Lan, cách dùng..."></textarea></div>
 <div class="row"><button class="primary" id="saveWord">Lưu vào pool</button><button id="speakWord">Nghe phát âm</button><button id="copyWord">Sao chép từ</button></div><div class="notice">Từ điển ngoại tuyến sẽ tự điền nghĩa khi nhận diện được từ. Với từ ghép hoặc dạng biến đổi khó, nghĩa gợi ý có thể chưa chính xác; hãy kiểm tra trước khi lưu vào pool.</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const BANK=[
@@ -168,8 +187,95 @@ const DICT={
 let mode='mc',count=20,session=[],idx=0,score=0,answered=0,locked=false,quizType='main',vocabSession=[],vocabIdx=0,vocabScore=0,activeWord='';
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 let vocab=load('ll_vocab',[]),stats=load('ll_stats',{sessions:0,answered:0,correct:0});
-const save=()=>{localStorage.setItem('ll_vocab',JSON.stringify(vocab));localStorage.setItem('ll_stats',JSON.stringify(stats));renderVocab();renderStats()};
+const save=()=>{localStorage.setItem('ll_vocab',JSON.stringify(vocab));localStorage.setItem('ll_stats',JSON.stringify(stats));renderVocab();renderStats();queueCloudSave()};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ 
+// Cloud sync: Supabase Auth + one private row per user. The database's RLS policy is the security boundary.
+let cloudClient=null, cloudUser=null, cloudPoll=null, cloudSaveTimer=null, lastCloudUpdated='';
+const CLOUD_CONFIG_KEY='ll_supabase_config_v1';
+const readCloudConfig=()=>{try{return JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||'null')}catch{return null}};
+const cloudStatus=(text)=>{const el=$('#cloudStatus');if(el)el.textContent=text};
+const cloudMessage=(text)=>{const el=$('#cloudMessage');if(el)el.textContent=text};
+const cloudButtons=()=>{const signed=!!cloudUser;$('#cloudSignIn').style.display=signed?'none':'';$('#cloudSignUp').style.display=signed?'none':'';$('#cloudSignOut').style.display=signed?'':'none';$('#cloudSyncNow').style.display=signed?'':'none';$('#cloudEmail').disabled=signed;$('#cloudPassword').disabled=signed;$('#cloudAuthArea').style.display=cloudClient?'':'none';cloudStatus(signed?'Đã đăng nhập':cloudClient?'Sẵn sàng đăng nhập':'Chưa cấu hình')};
+function initCloudClient(){
+ const cfg=readCloudConfig();
+ if(!cfg||!cfg.url||!cfg.key||!window.supabase){cloudClient=null;cloudUser=null;cloudButtons();return false}
+ try{cloudClient=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})}catch(e){cloudClient=null;cloudMessage('Không tạo được kết nối. Hãy kiểm tra Project URL và public key.');cloudButtons();return false}
+ cloudButtons();
+ cloudClient.auth.getSession().then(({data,error})=>{if(error){cloudMessage('Không đọc được phiên đăng nhập: '+error.message);return}cloudUser=data.session?.user||null;cloudButtons();if(cloudUser)loadCloudWords(true)});
+ cloudClient.auth.onAuthStateChange((event,session)=>{cloudUser=session?.user||null;cloudButtons();if(event==='SIGNED_IN'&&cloudUser)loadCloudWords(true);if(event==='SIGNED_OUT'){if(cloudPoll)clearInterval(cloudPoll);cloudPoll=null;lastCloudUpdated='';cloudMessage('Đã đăng xuất. Word Pool vẫn còn trên thiết bị này.')}});
+ return true;
+}
+function mergeWordPools(localWords,remoteWords){
+ const map=new Map();
+ // Remote first, then local so local entries win for the same word during initial merge.
+ for(const item of [...(Array.isArray(remoteWords)?remoteWords:[]),...(Array.isArray(localWords)?localWords:[])]){
+  if(!item||!item.word)continue;const key=String(item.word).trim().toLocaleLowerCase();if(key)map.set(key,{word:String(item.word).trim(),meaning:String(item.meaning||''),note:String(item.note||'')});
+ }
+ return [...map.values()];
+}
+async function loadCloudWords(mergeLocal=false){
+ if(!cloudClient||!cloudUser)return;
+ cloudStatus('Đang tải…');cloudMessage('Đang tải Word Pool từ tài khoản của bạn…');
+ const {data,error}=await cloudClient.from('user_word_pools').select('words,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+ if(error){cloudStatus('Cần kiểm tra');cloudMessage('Không đọc được Word Pool. Hãy kiểm tra đã chạy SQL tạo bảng và bật Row Level Security chưa. Chi tiết: '+error.message);return}
+ if(data){
+  lastCloudUpdated=data.updated_at||'';
+  vocab=mergeLocal?mergeWordPools(vocab,data.words): (Array.isArray(data.words)?data.words:[]);
+  localStorage.setItem('ll_vocab',JSON.stringify(vocab));renderVocab();
+  if(mergeLocal){await saveCloudWords();cloudMessage('Đã hợp nhất từ vựng trên thiết bị này với Word Pool trên đám mây.');}
+  else cloudMessage('Word Pool đã được cập nhật từ đám mây.');
+ }else{
+  lastCloudUpdated='';
+  if(vocab.length){await saveCloudWords();cloudMessage('Đã sao lưu Word Pool hiện có của thiết bị này lên đám mây.');}
+  else cloudMessage('Tài khoản đã kết nối. Hãy lưu từ mới; Word Pool sẽ tự đồng bộ.');
+ }
+ cloudStatus('Đã đồng bộ');
+ if(cloudPoll)clearInterval(cloudPoll);
+ cloudPoll=setInterval(()=>refreshCloudWords(),20000);
+}
+async function saveCloudWords(){
+ if(!cloudClient||!cloudUser)return;
+ const now=new Date().toISOString();
+ const {data,error}=await cloudClient.from('user_word_pools').upsert({user_id:cloudUser.id,words:vocab,updated_at:now},{onConflict:'user_id'}).select('updated_at').single();
+ if(error){cloudStatus('Chưa đồng bộ');cloudMessage('Dữ liệu vẫn được giữ trên thiết bị này nhưng chưa lên đám mây. Kiểm tra bảng/policy Supabase và kết nối mạng. Chi tiết: '+error.message);return}
+ lastCloudUpdated=data?.updated_at||now;cloudStatus('Đã đồng bộ');cloudMessage('Word Pool đã được lưu trên đám mây. Có thể mở app trên iPad/laptop bằng cùng tài khoản.');
+}
+function queueCloudSave(){if(!cloudClient||!cloudUser)return;if(cloudSaveTimer)clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(()=>saveCloudWords(),700)}
+async function refreshCloudWords(){
+ if(!cloudClient||!cloudUser)return;
+ const {data,error}=await cloudClient.from('user_word_pools').select('words,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+ if(error||!data||!data.updated_at||data.updated_at<=lastCloudUpdated)return;
+ // Remote is newer: refresh this device so additions, edits and deletions propagate.
+ vocab=Array.isArray(data.words)?data.words:[];localStorage.setItem('ll_vocab',JSON.stringify(vocab));lastCloudUpdated=data.updated_at;renderVocab();cloudStatus('Đã đồng bộ');cloudMessage('Word Pool mới nhất đã được nhận từ thiết bị khác.');
+}
+$('#saveSupabaseConfig').onclick=()=>{
+ const url=$('#supabaseUrl').value.trim().replace(/\/$/,'');const key=$('#supabaseKey').value.trim();
+ if(!/^https:\/\/[a-zA-Z0-9-]+\.supabase\.co$/.test(url)||!key){cloudMessage('Hãy nhập đúng Project URL (https://…supabase.co) và public/anon key.');return}
+ localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({url,key}));
+ if(initCloudClient())cloudMessage('Đã lưu cấu hình. Bây giờ đăng nhập hoặc tạo tài khoản.');
+};
+$('#forgetSupabaseConfig').onclick=async()=>{if(cloudClient)await cloudClient.auth.signOut();if(cloudPoll)clearInterval(cloudPoll);cloudPoll=null;cloudClient=null;cloudUser=null;localStorage.removeItem(CLOUD_CONFIG_KEY);$('#supabaseUrl').value='';$('#supabaseKey').value='';cloudButtons();cloudMessage('Đã xóa cấu hình Supabase khỏi trình duyệt. Word Pool cục bộ không bị xóa.')};
+$('#cloudSignUp').onclick=async()=>{
+ if(!cloudClient){cloudMessage('Hãy lưu cấu hình Supabase trước.');return}
+ const email=$('#cloudEmail').value.trim(),password=$('#cloudPassword').value;
+ if(!email||password.length<8){cloudMessage('Nhập email hợp lệ và mật khẩu ít nhất 8 ký tự.');return}
+ cloudMessage('Đang tạo tài khoản…');const {data,error}=await cloudClient.auth.signUp({email,password});
+ if(error){cloudMessage('Không tạo được tài khoản: '+error.message);return}
+ if(data.session){cloudUser=data.user;cloudButtons();await loadCloudWords(true)}else cloudMessage('Đã gửi yêu cầu đăng ký. Hãy mở email xác nhận của Supabase, sau đó quay lại đăng nhập.');
+};
+$('#cloudSignIn').onclick=async()=>{
+ if(!cloudClient){cloudMessage('Hãy lưu cấu hình Supabase trước.');return}
+ const email=$('#cloudEmail').value.trim(),password=$('#cloudPassword').value;
+ if(!email||!password){cloudMessage('Nhập email và mật khẩu.');return}
+ cloudMessage('Đang đăng nhập…');const {data,error}=await cloudClient.auth.signInWithPassword({email,password});
+ if(error){cloudMessage('Đăng nhập thất bại: '+error.message);return}
+ cloudUser=data.user;cloudButtons();await loadCloudWords(true);
+};
+$('#cloudSignOut').onclick=async()=>{if(cloudClient)await cloudClient.auth.signOut()};
+$('#cloudSyncNow').onclick=()=>loadCloudWords(true);
+function initCloudUI(){const cfg=readCloudConfig();if(cfg){$('#supabaseUrl').value=cfg.url||'';$('#supabaseKey').value=cfg.key||'';if(initCloudClient())cloudMessage('Đã tìm thấy cấu hình trên trình duyệt. Đang kiểm tra phiên đăng nhập…')}cloudButtons()}
+
 function shuffle(a){let b=[...a];for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
 function wordsHTML(s){return esc(s).replace(/[A-Za-zÄÖÅäöå]+/g,w=>`<span class="word" data-word="${w.replace(/"/g,'')}">${w}</span>`)}
 function setView(id){$$('.view').forEach(v=>v.classList.toggle('active',v.id===id));$$('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(id==='vocabulary')renderVocab();if(id==='progress')renderStats()}
@@ -247,6 +353,6 @@ function renderStats(){$('#pSessions').textContent=stats.sessions;$('#pAnswered'
 $('#clearProgress').onclick=()=>{if(confirm('Xóa toàn bộ thống kê?')){stats={sessions:0,answered:0,correct:0};save()}};
 $('#resetBtn').onclick=()=>{if(confirm('Làm mới lượt quiz hiện tại?')){session=[];$('#quizArea').innerHTML='<div class="empty">Chọn chế độ và bấm “Bắt đầu quiz ngẫu nhiên”.</div>'}};
 $('#startBtn').onclick=startMain;
-renderVocab();renderStats();
+renderVocab();renderStats();initCloudUI();
 </script>
 </body></html>
