@@ -13,8 +13,8 @@
 </head>
 <body>
 <div class="app">
-<header class="top"><div class="brand"><div class="logo">L+</div><div><div class="eyebrow">PERSONAL STUDY SPACE</div><h1>Lähihoitaja Study Lab</h1><div class="sub">Học tiếng Phần Lan · Ôn tập · Từ vựng</div></div></div><button class="ghost" id="resetBtn" title="Xóa tiến độ bài làm hiện tại">Làm mới bài</button></header>
-<section class="card" id="cloudSyncCard" style="padding:17px;margin-bottom:18px">
+<header class="top"><div class="brand"><div class="logo">L+</div><div><div class="eyebrow">PERSONAL STUDY SPACE</div><h1>Lähihoitaja Study Lab</h1><div class="sub">Học tiếng Phần Lan · Ôn tập · Từ vựng</div></div></div><div class="row"><button class="ghost" id="toggleCloudBtn" aria-expanded="false" aria-controls="cloudSyncCard">Đồng bộ Word Pool</button><button class="ghost" id="resetBtn" title="Xóa tiến độ bài làm hiện tại">Làm mới bài</button></div></header>
+<section class="card" id="cloudSyncCard" style="display:none;padding:17px;margin-bottom:18px">
   <div class="headrow"><div><h2 style="font-size:20px;margin:0 0 5px">Đồng bộ Word Pool giữa iPad và laptop</h2><div class="muted small">Kết nối tài khoản riêng để lưu từ vựng trên đám mây. Dữ liệu của mỗi tài khoản được bảo vệ bằng chính sách truy cập riêng.</div></div><span class="pill" id="cloudStatus">Chưa cấu hình</span></div>
   <details id="cloudSetupDetails" style="margin-top:14px"><summary style="cursor:pointer;color:var(--mint2);font-weight:700">Thiết lập kết nối Supabase (chỉ cần làm một lần trên mỗi trình duyệt)</summary>
     <div class="setup" style="margin-bottom:0"><p class="small muted">Nhập Project URL và khóa publishable/anon của dự án Supabase. Chỉ dùng khóa public/anon — tuyệt đối không dán service_role hoặc secret key vào website.</p>
@@ -39,7 +39,7 @@
 <aside class="side">
 <h3>Study dashboard</h3>
 <div class="stats">
-<div class="stat"><span>Ngân hàng câu hỏi</span><strong>100</strong></div>
+<div class="stat"><span>Ngân hàng câu hỏi</span><strong id="bankCount">100</strong></div>
 <div class="stat"><span>Trắc nghiệm</span><strong>50</strong></div>
 <div class="stat"><span>Tự viết</span><strong>50</strong></div>
 <div class="stat"><span>Từ đã lưu</span><strong id="sideVocab">0</strong></div>
@@ -50,8 +50,8 @@
 <main class="main">
 <section class="view active" id="study">
 <div class="headrow"><div><span class="pill">IHMISEN PSYYKKINEN JA SOSIAALINEN KEHITYS · TARKISTETTU</span><h2 style="margin-top:10px">Bài ôn tập của bạn</h2><div class="muted">Bám sát các chủ đề trong tài liệu ôn thi: từ tuổi sơ sinh đến tuổi già, kiintymyssuhteet, moraalinen kehitys, leikki, parisuhde, perhe và tutkimusmenetelmät. Câu hỏi được xáo trộn mỗi lượt.</div></div></div>
-<div class="setup"><b>1. Chọn loại câu hỏi</b><div class="options" id="modeOptions"><button class="selected" data-mode="mc">50 câu trắc nghiệm</button><button data-mode="write">50 câu tự viết</button><button data-mode="all">Kết hợp cả 100 câu</button></div>
-<b>2. Số câu trong lượt học</b><div class="options" id="countOptions"><button data-count="10">10 câu</button><button data-count="20" class="selected">20 câu</button><button data-count="50">50 câu</button><button data-count="100">100 câu</button></div>
+<div class="setup"><b>1. Chọn bộ câu hỏi / môn học</b><select class="field" id="subjectSelect" style="margin:8px 0 16px"><option value="current">Ihmisen psyykkinen ja sosiaalinen kehitys — bộ hiện tại (100 câu)</option><option value="ihmisen50">Ihmisen kehitys ja elämänkaari — bộ PDF 50 câu</option></select><div id="sourceNote" class="small muted" style="margin-bottom:14px;display:none">Lưu ý: PDF gốc thiếu nội dung ở câu 14–15, 23–24, 33 và 41–50. Các câu này được bổ sung theo chủ đề của từng phần để bộ quiz đủ 50 câu.</div><b>2. Chọn loại câu hỏi</b><div class="options" id="modeOptions"><button class="selected" data-mode="mc">50 câu trắc nghiệm</button><button data-mode="write">50 câu tự viết</button><button data-mode="all">Kết hợp cả 100 câu</button></div>
+<b>3. Số câu trong lượt học</b><div class="options" id="countOptions"><button data-count="10">10 câu</button><button data-count="20" class="selected">20 câu</button><button data-count="50">50 câu</button><button data-count="100">100 câu</button></div>
 <div class="row"><button class="primary" id="startBtn">Bắt đầu quiz ngẫu nhiên</button><span class="muted small">Không lặp câu trong cùng một lượt.</span></div></div>
 <div id="quizArea"><div class="empty">Chọn chế độ và bấm “Bắt đầu quiz ngẫu nhiên”.</div></div>
 </section>
@@ -181,10 +181,462 @@ const WRITES=[
 ["Miten turvallinen vuorovaikutus tukee lapsen kehitystä?", "Se vahvistaa turvallisuuden tunnetta, kielen oppimista, tunteiden säätelyä ja luottamusta muihin ihmisiin."],
 ["Mitä haasteita elämänvaiheiden siirtymiin voi liittyä, ja mikä auttaa niissä?", "Siirtymiin voi liittyä epävarmuutta, roolien muutoksia ja menetyksiä. Tuki, keskustelu, joustavuus ja turvalliset ihmissuhteet auttavat sopeutumaan."]
 ];
+const IHMISEN_BANK=[
+  [
+    "Mitkä ovat ihmisen kehityksen neljä pääosa-aluetta?",
+    "Fyysinen, kognitiivinen, psyykkinen ja sosiaalinen",
+    "Biologinen, kemiallinen, fyysinen ja anatominen",
+    "Motorinen, kielellinen, matemaattinen ja musiikillinen",
+    "Sosiaalinen, kulttuurinen, taloudellinen ja eettinen",
+    "Fyysinen, kognitiivinen, psyykkinen ja sosiaalinen",
+    "Kehityksen osa-alueet vaikuttavat toisiinsa."
+  ],
+  [
+    "Mitä kognitiivisella kehityksellä tarkoitetaan?",
+    "Lihaskunnon ja pituuden kasvamista",
+    "Ajattelun, muistin, kielen ja oppimisen kehitystä",
+    "Tunne-elämän ja minäkäsityksen muotoutumista",
+    "Kaverisuhteiden muodostumista",
+    "Ajattelun, muistin, kielen ja oppimisen kehitystä",
+    "Kognitiivinen kehitys liittyy ajatteluun, muistiin, kieleen ja oppimiseen."
+  ],
+  [
+    "Miten perimä ja ympäristö vaikuttavat ihmisen kehitykseen?",
+    "Vain perimä määrää ihmisen kehityksen",
+    "Vain ympäristö muovaa ihmistä täysin",
+    "Perimä antaa biologisen pohjan, ympäristö muovaa ja mahdollistaa kehityksen",
+    "Perimä ja ympäristö eivät vaikuta toisiinsa lainkaan",
+    "Perimä antaa biologisen pohjan, ympäristö muovaa ja mahdollistaa kehityksen",
+    "Perimä ja ympäristö vaikuttavat yhdessä kehitykseen."
+  ],
+  [
+    "Mitä tarkoitetaan hienomotoriikalla?",
+    "Isojen lihasten hallintaa, kuten juoksemista",
+    "Pienten lihasten hallintaa, kuten kynän pitämistä ja leikkaamista",
+    "Tasapainon säilyttämistä hyppiessä",
+    "Sydänlihaksen ja hengityksen säätelyä",
+    "Pienten lihasten hallintaa, kuten kynän pitämistä ja leikkaamista",
+    "Hienomotoriikkaa tarvitaan tarkkoihin käden ja sormien liikkeisiin."
+  ],
+  [
+    "Mitä tarkoitetaan karkeamotoriikalla?",
+    "Isojen lihasten ja koko kehon hallintaa (juoksu, kiipeily)",
+    "Sormien tarkkoja liikkeitä piirrettäessä",
+    "Puheen tuottamisen lihasliikkeitä",
+    "Silmänpohjan lihasten toimintaa",
+    "Isojen lihasten ja koko kehon hallintaa (juoksu, kiipeily)",
+    "Karkeamotoriikka liittyy suurten lihasryhmien ja kehon liikkeiden hallintaan."
+  ],
+  [
+    "Miten tunteiden säätely liittyy psyykkiseen kehitykseen?",
+    "Se on kykyä peittää kaikki tunteet muilta",
+    "Se on kykyä tunnistaa, ilmaista ja hallita tunteita ikätasoisesti",
+    "Se tarkoittaa, ettei ihminen koe lainkaan kielteisiä tunteita",
+    "Se liittyy vain älykkyysosamäärään",
+    "Se on kykyä tunnistaa, ilmaista ja hallita tunteita ikätasoisesti",
+    "Tunteiden säätely kehittyy harjoittelun ja turvallisen tuen avulla."
+  ],
+  [
+    "Mitä itsetunto tarkoittaa?",
+    "Yksilön käsitystä omasta arvostaan ja kyvystään hyväksyä itsensä",
+    "Sitä, kuinka paljon tietoa ihmisellä on itsestään",
+    "Vain fyysistä tyytyväisyyttä omaan ulkonäköön",
+    "Kykyä olla välittämättä muista ihmisistä",
+    "Yksilön käsitystä omasta arvostaan ja kyvystään hyväksyä itsensä",
+    "Itsetunto liittyy kokemukseen omasta arvosta."
+  ],
+  [
+    "Mikä on aivojen plastisuus (muovautuvuus)?",
+    "Aivojen kyky luutua aikuisiässä",
+    "Aivojen kyky muuttua ja mukautua kokemusten ja oppimisen seurauksena",
+    "Aivosolujen korvautuminen muovimateriaaleilla",
+    "Aivojen kiinteä rakenne, joka ei muutu syntymän jälkeen",
+    "Aivojen kyky muuttua ja mukautua kokemusten ja oppimisen seurauksena",
+    "Aivot voivat muuttua oppimisen ja kokemusten myötä."
+  ],
+  [
+    "Miten sosiaalistuminen (sosiaalinen kehitys) määritellään?",
+    "Prosessi, jossa yksilö oppii yhteisönsä tavat, arvot, normit ja roolit",
+    "Tapahtuma, jossa ihminen muuttaa uuteen maahan",
+    "Vain ystävien hankkimista sosiaalisessa mediassa",
+    "Koulutusjärjestelmän suorittamista",
+    "Prosessi, jossa yksilö oppii yhteisönsä tavat, arvot, normit ja roolit",
+    "Sosiaalistumisessa opitaan yhteisön toimintatapoja ja normeja."
+  ],
+  [
+    "Miksi kehityksen eri osa-alueet ovat riippuvaisia toisistaan?",
+    "Ne eivät ole riippuvaisia, vaan kehittyvät erillään",
+    "Yhden alueen muutos (esim. kieli) vaikuttaa suoraan muihin (esim. sosiaalinen vuorovaikutus)",
+    "Koska aivot ohjaavat vain fyysistä kehitystä",
+    "Koska kehitys pysähtyy, jos yksi alue viivästyy",
+    "Yhden alueen muutos (esim. kieli) vaikuttaa suoraan muihin (esim. sosiaalinen vuorovaikutus)",
+    "Kehityksen osa-alueet vaikuttavat toisiinsa."
+  ],
+  [
+    "Mikä on kiintymyssuhteen keskeinen ajatus (Bowlby)?",
+    "Vauva tarvitsee vain ravintoa kehittyäkseen",
+    "Turvallinen side hoitajaan luo pohjan myöhemmälle kehitykselle ja ihmissuhteille",
+    "Kiintymys syntyy vasta leikki-iässä",
+    "Lapsen tulee itsenäistyä ilman hoitajan tukea heti syntymän jälkeen",
+    "Turvallinen side hoitajaan luo pohjan myöhemmälle kehitykselle ja ihmissuhteille",
+    "Turvallinen kiintymyssuhde auttaa lasta tuntemaan olonsa turvalliseksi."
+  ],
+  [
+    "Mitä tarkoittaa Eriksonin teorian mukainen perusluottamus vauvaiässä?",
+    "Vauvan kykyä kävellä ilman tukea",
+    "Vauvan oppimista luottamaan maailmaan ja hoitajiin johdonmukaisen hoivan ansiosta",
+    "Vauvan kykyä ilmaista toiveensa sanallisesti",
+    "Sitä, että vauva ei pelkää vieraita ihmisiä",
+    "Vauvan oppimista luottamaan maailmaan ja hoitajiin johdonmukaisen hoivan ansiosta",
+    "Johdonmukainen hoiva tukee perusluottamusta."
+  ],
+  [
+    "Mitä temperamentti tarkoittaa vauvaiässä?",
+    "Kasvatuksella opittua käyttäytymismallia",
+    "Yksilöllistä ja biologisperäistä tapaa reagoida ja toimia",
+    "Tilapäistä mielialan vaihtelua sairauden aikana",
+    "Älykkyysosamäärän varhaista tasoa",
+    "Yksilöllistä ja biologisperäistä tapaa reagoida ja toimia",
+    "Temperamentti kuvaa yksilöllistä tapaa reagoida ja toimia."
+  ],
+  [
+    "Mitä tarkoitetaan vauvan varhaisella vuorovaikutuksella?",
+    "Vauvan ja hoivaajan vastavuoroista viestintää ja yhteistä toimintaa",
+    "Vain vauvan itsenäistä leikkimistä",
+    "Ainoastaan puheen opettelua koulussa",
+    "Tilannetta, jossa vauvaa ei huomioida",
+    "Vauvan ja hoivaajan vastavuoroista viestintää ja yhteistä toimintaa",
+    "Varhaista vuorovaikutusta ovat esimerkiksi katsekontakti, ääntely ja hoivaajan vastaukset."
+  ],
+  [
+    "Miksi vastasyntyneen aistit ja refleksit ovat tärkeitä?",
+    "Ne auttavat vauvaa reagoimaan ympäristöön ja tukevat varhaista selviytymistä",
+    "Ne tarkoittavat, että vauva osaa jo tehdä päätöksiä kuten aikuinen",
+    "Ne estävät vuorovaikutuksen",
+    "Ne kehittyvät vasta kouluiässä",
+    "Ne auttavat vauvaa reagoimaan ympäristöön ja tukevat varhaista selviytymistä",
+    "Aistit ja refleksit auttavat vauvaa reagoimaan ympäristöön."
+  ],
+  [
+    "Mitä tarkoittaa turvaton kiintymyssuhde?",
+    "Lapsi ei luota hoitajan tukeen välinpitämättömän tai ristiriitaisen hoivan vuoksi",
+    "Lapsi on liian kiintynyt leluunsa",
+    "Lapsi oppii kävelemään liian varhain",
+    "Kyseessä on perinnöllinen aivosairaus",
+    "Lapsi ei luota hoitajan tukeen välinpitämättömän tai ristiriitaisen hoivan vuoksi",
+    "Turvaton kiintymyssuhde voi liittyä siihen, ettei hoiva ole lapselle ennakoitavaa tai riittävän sensitiivistä."
+  ],
+  [
+    "Mikä on vauvan tärkein viestintäkeino elämän alkutaipaleella?",
+    "Nauru",
+    "Itku",
+    "Elekieli käsillä",
+    "Ensimmäiset sanat",
+    "Itku",
+    "Itku on vauvalle tärkeä tapa ilmaista tarpeita."
+  ],
+  [
+    "Mitä tarkoitetaan sensitiivisellä vanhemmuudella?",
+    "Vanhemman kykyä havaita vauvan viestit, tulkita ne oikein ja vastata niihin viipymättä",
+    "Vanhemman yliherkkyyttä äänille",
+    "Sitä, että vanhempi päättää kaikesta ilman joustavuutta",
+    "Vanhemman tiukkaa kuriin perustuvaa kasvatusta",
+    "Vanhemman kykyä havaita vauvan viestit, tulkita ne oikein ja vastata niihin viipymättä",
+    "Sensitiivinen vanhempi huomaa ja tulkitsee lapsen viestejä."
+  ],
+  [
+    "Mikä merkitys kosketuksella on vauvalle?",
+    "Kosketuksella ei ole merkitystä kehitykselle",
+    "Lisää turvallisuudentunnetta, alentaa stressiä ja edistää kehitystä",
+    "Tekee vauvasta liian riippuvaisen muista",
+    "Vaikuttaa vain ihon lämpötilaan",
+    "Lisää turvallisuudentunnetta, alentaa stressiä ja edistää kehitystä",
+    "Turvallinen kosketus tukee läheisyyttä ja turvallisuuden tunnetta."
+  ],
+  [
+    "Mikä kehityksellinen merkkipaalu saavutetaan yleensä noin vuoden iässä?",
+    "Sujuva lukutaito",
+    "Ensimmäiset sanat ja ensiaskeleet ilman tukea",
+    "Kolmipyörällä ajaminen",
+    "Omien tunteiden täydellinen hallinta",
+    "Ensimmäiset sanat ja ensiaskeleet ilman tukea",
+    "Ensimmäiset sanat ja ensiaskeleet voivat ilmaantua noin vuoden iässä, mutta yksilöllinen vaihtelu on tavallista."
+  ],
+  [
+    "Mikä on leikin keskeinen tehtävä leikki-ikäisen kehityksessä?",
+    "Vain ajan kuluttaminen vanhempien levätessä",
+    "Kehittää kognitiivisia, sosiaalisia, emotionaalisia ja motorisia taitoja",
+    "Valmistaa lapsi suoraan työelämään",
+    "Korvata koulun opetussuunnitelma",
+    "Kehittää kognitiivisia, sosiaalisia, emotionaalisia ja motorisia taitoja",
+    "Leikki tukee monia kehityksen osa-alueita."
+  ],
+  [
+    "Mitä tarkoittaa uhmaikä (omantahtoisuus)?",
+    "Kehityshäiriötä, joka pitää hoitaa lääkkeillä",
+    "Kehitysvaihetta, jossa lapsi harjoittelee omaa tahtoa ja itsenäisyyttä",
+    "Kasvatuksen epäonnistumista",
+    "Lapsen pahaa luonnetta",
+    "Kehitysvaihetta, jossa lapsi harjoittelee omaa tahtoa ja itsenäisyyttä",
+    "Uhmaikä liittyy itsenäistymisen ja oman tahdon harjoitteluun."
+  ],
+  [
+    "Mitä symbolinen leikki tarkoittaa?",
+    "Esineellä tai toiminnalla esitetään jotakin muuta",
+    "Lapsi harjoittelee vain juoksemista",
+    "Lapsi nukkuu",
+    "Lapsen verenpainetta mitataan",
+    "Esineellä tai toiminnalla esitetään jotakin muuta",
+    "Leikissä esimerkiksi palikka voi esittää puhelinta."
+  ],
+  [
+    "Miksi mielikuvitus on tärkeää leikki-iässä?",
+    "Se auttaa lasta kokeilemaan tilanteita, ratkaisemaan ongelmia ja kehittämään luovuutta",
+    "Se estää kielen kehitystä",
+    "Se liittyy vain nukkumiseen",
+    "Se tarkoittaa, ettei lapsi erota koskaan leikkiä todellisuudesta",
+    "Se auttaa lasta kokeilemaan tilanteita, ratkaisemaan ongelmia ja kehittämään luovuutta",
+    "Mielikuvitus tukee leikkiä, ongelmanratkaisua ja luovuutta."
+  ],
+  [
+    "Miten lapsen kieli kehittyy 2–5 vuoden iässä?",
+    "Sanavarasto laajenee nopeasti ja lauseet pidentyvät",
+    "Kielen kehitys pysähtyy tässä iässä",
+    "Lapsi oppii heti kirjoittamaan täydellisesti",
+    "Puhe muuttuu vain viittomakieleksi",
+    "Sanavarasto laajenee nopeasti ja lauseet pidentyvät",
+    "Sanavarasto ja lauserakenteet kehittyvät nopeasti varhaislapsuudessa."
+  ],
+  [
+    "Mikä on kehityksellinen kielihäiriö?",
+    "Tilapäinen kurkkukipu",
+    "Aivoperäinen vaikeus oppia tai ymmärtää kieltä normaalin kehityksen raameissa",
+    "Haluttomuus puhua vieraille ihmisille",
+    "Huono kuulo, joka paranee itsestään",
+    "Aivoperäinen vaikeus oppia tai ymmärtää kieltä normaalin kehityksen raameissa",
+    "Kehityksellinen kielihäiriö vaikuttaa kielen oppimiseen tai ymmärtämiseen."
+  ],
+  [
+    "Miten aikuinen voi tukea leikki-ikäisen tunteiden säätelyä?",
+    "Kieltämällä kaikkien kielteisten tunteiden näyttämisen",
+    "Nimeämällä tunteita ja opettamalla turvallisia keinoja ilmaista niitä",
+    "Rankaisemalla muille suuttumisesta",
+    "Jättämällä lapsi aina yksin kiukun yllättäessä",
+    "Nimeämällä tunteita ja opettamalla turvallisia keinoja ilmaista niitä",
+    "Tunteiden nimeäminen auttaa lasta tunnistamaan ja säätelemään tunteitaan."
+  ],
+  [
+    "Mitä hienomotorisia taitoja 4-vuotias lapsi yleensä hallitsee?",
+    "Saksilla leikkaaminen ja kynän pitäminen",
+    "Kaksipyöräisellä pyörällä ajaminen ilman apupyöriä",
+    "Tietokoneen näppäimistöllä kymmensormijärjestelmä",
+    "Kenkien nauhojen solmiminen sekunnissa",
+    "Saksilla leikkaaminen ja kynän pitäminen",
+    "Hienomotoriikka kehittyy harjoittelun myötä."
+  ],
+  [
+    "Mitä tarkoittaa sosiodramaattinen leikki?",
+    "Yksinleikkiä rakennuspalikoilla",
+    "Yhteisleikkiä, jossa lapset luovat juonen ja jakavat roolit (esim. kotileikki)",
+    "Urheilukilpailua sääntöjen mukaan",
+    "Videopelien pelaamista ryhmässä",
+    "Yhteisleikkiä, jossa lapset luovat juonen ja jakavat roolit (esim. kotileikki)",
+    "Sosiodramaattisessa leikissä lapset jakavat rooleja ja rakentavat yhteistä tarinaa."
+  ],
+  [
+    "Miksi rutiinit ovat tärkeitä leikki-ikäiselle?",
+    "Ne luovat turvallisuudentunnetta ja ennustettavuutta arkeen",
+    "Ne tekevät elämästä tylsää ja rajoittavat luovuutta",
+    "Ne ovat tärkeitä vain vanhempien aikatauluille",
+    "Ne estävät lapsen itsenäistymisen",
+    "Ne luovat turvallisuudentunnetta ja ennustettavuutta arkeen",
+    "Ennakoitavat rutiinit voivat lisätä lapsen turvallisuuden tunnetta."
+  ],
+  [
+    "Mikä on Piaget'n mukaan kouluikäisen ajattelun keskeinen vaihe?",
+    "Sensomotorinen vaihe",
+    "Konkreettisen ajattelun vaihe",
+    "Muodollisen ajattelun vaihe",
+    "Abstraktin päättelyn vaihe",
+    "Konkreettisen ajattelun vaihe",
+    "Kouluikäisen ajattelu perustuu usein konkreettisiin esimerkkeihin."
+  ],
+  [
+    "Mitä Eriksonin kriisi 'ahkeruus vs. alemmuus' tarkoittaa kouluiässä?",
+    "Lapsi harjoittelee taitoja ja osaamista; onnistumiset tukevat pystyvyyden tunnetta",
+    "Lapsi oppii luottamaan hoitajaan ensimmäistä kertaa",
+    "Nuori muodostaa identiteettiään",
+    "Aikuinen valmistautuu eläkkeelle",
+    "Lapsi harjoittelee taitoja ja osaamista; onnistumiset tukevat pystyvyyden tunnetta",
+    "Kouluiässä lapsi harjoittelee osaamista ja vertailee suoriutumistaan."
+  ],
+  [
+    "Miten koululaisen oppimismotivaatiota voidaan tukea?",
+    "Antamalla kannustavaa palautetta ja sopivia haasteita",
+    "Vertailemalla lasta jatkuvasti muihin",
+    "Korostamalla vain virheitä",
+    "Estämällä itsenäinen harjoittelu",
+    "Antamalla kannustavaa palautetta ja sopivia haasteita",
+    "Kannustus ja sopivan tasoiset tehtävät tukevat motivaatiota."
+  ],
+  [
+    "Miksi kaveriporukka (vertaisryhmä) on erityisen tärkeä kouluikäiselle?",
+    "Se tarjoaa vertaistukea, opettaa ryhmätaitoja ja vahvistaa itsetuntoa",
+    "Se korvaa opettajan opetuksen koulussa",
+    "Sen avulla voi välttää läksyjen tekemisen",
+    "Se ei vaikuta lapsen kehitykseen",
+    "Se tarjoaa vertaistukea, opettaa ryhmätaitoja ja vahvistaa itsetuntoa",
+    "Vertaisryhmässä harjoitellaan yhteistyötä ja kuulumista ryhmään."
+  ],
+  [
+    "Mitä tarkoittaa kiusaaminen ja miten se vaikuttaa lapsen kehitykseen?",
+    "Yksittäistä riitaa, joka vahvistaa luonnetta",
+    "Toistuvaa ja tahallista pahan mielen aiheuttamista; vaarantaa psyykkisen turvallisuuden",
+    "Leikkimielistä kiusoittelua ilman haittaa",
+    "Opettajien antamaa tiukkaa palautetta",
+    "Toistuvaa ja tahallista pahan mielen aiheuttamista; vaarantaa psyykkisen turvallisuuden",
+    "Kiusaaminen voi heikentää turvallisuuden tunnetta ja hyvinvointia."
+  ],
+  [
+    "Mitä tarkoittaa 'opittu avuttomuus' oppimisessa?",
+    "Tila, jossa lapsi uskoo epäonnistuvansa aina eikä enää yritä toistuvien pettymysten jälkeen",
+    "Lapsen halua saada apua opettajalta aina kun mahdollista",
+    "Taktiikkaa saada muut tekemään tehtävät puolestaan",
+    "Erityistä muistisairautta lapsuudessa",
+    "Tila, jossa lapsi uskoo epäonnistuvansa aina eikä enää yritä toistuvien pettymysten jälkeen",
+    "Toistuvat pettymykset voivat saada ihmisen uskomaan, ettei yrittäminen auta."
+  ],
+  [
+    "Mitä nuoruusiän keskeinen psyykkinen kehitystehtävä on Eriksonin mukaan?",
+    "Autonomian saavuttaminen vanhemmista",
+    "Identiteetin muodostaminen (kuka minä olen?)",
+    "Perheen perustaminen",
+    "Eläkesuunnitelman tekeminen",
+    "Identiteetin muodostaminen (kuka minä olen?)",
+    "Nuoruudessa pohditaan omaa identiteettiä, arvoja ja tulevaisuutta."
+  ],
+  [
+    "Mitä tarkoitetaan sukupuoli-identiteetillä?",
+    "Yksilön omaa sisäistä kokemusta omasta sukupuolestaan",
+    "Vain biologisia sukupuoliominaisuuksia",
+    "Yhteiskunnan asettamia vaate-etikettejä",
+    "Seksuaalista suuntautumista",
+    "Yksilön omaa sisäistä kokemusta omasta sukupuolestaan",
+    "Sukupuoli-identiteetti on ihmisen oma kokemus sukupuolestaan."
+  ],
+  [
+    "Miksi nuoren aivojen kehitys voi altistaa riskikäyttäytymiselle?",
+    "Otsalohko kehittyy ennen limbistä järjestelmää",
+    "Tunteita käsittelevä limbinen järjestelmä kehittyy ennen järkeä ohjaavaa otsalohkoa",
+    "Nuoren aivot ovat täysin valmiit 13-vuotiaana",
+    "Riskikäyttäytyminen johtuu vain hormonien puutteesta",
+    "Tunteita käsittelevä limbinen järjestelmä kehittyy ennen järkeä ohjaavaa otsalohkoa",
+    "Itsesäätelyyn liittyvät aivoalueet kypsyvät vähitellen."
+  ],
+  [
+    "Mitä tarkoittaa abstrakti ajattelu (Piaget: muodolliset operaatiot)?",
+    "Kykyä ajatella hypoteettisesti, arvioida arvoja ja suunnitella tulevaisuutta",
+    "Kykyä laskea vain konkreettisilla esineillä",
+    "Taideteosten maalaamista ilman mallia",
+    "Vaikeutta ymmärtää vertauskuvia",
+    "Kykyä ajatella hypoteettisesti, arvioida arvoja ja suunnitella tulevaisuutta",
+    "Abstrakti ajattelu mahdollistaa myös hypoteettisten tilanteiden pohtimisen."
+  ],
+  [
+    "Miten nuoren itsenäistymistä voidaan tukea?",
+    "Antamalla ikätasoisesti vastuuta ja kuuntelemalla nuoren näkemyksiä",
+    "Päättämällä kaikki asiat nuoren puolesta",
+    "Kieltämällä kaikki ystävyyssuhteet",
+    "Välttämällä keskustelua",
+    "Antamalla ikätasoisesti vastuuta ja kuuntelemalla nuoren näkemyksiä",
+    "Nuori tarvitsee sekä itsenäisyyttä että turvallisten aikuisten tukea."
+  ],
+  [
+    "Miten nuoren identiteetti voi kehittyä?",
+    "Kokemusten, arvojen, ihmissuhteiden ja pohdinnan kautta",
+    "Vain syntymähetkellä eikä sen jälkeen",
+    "Pelkästään koulunumeroista",
+    "Ilman mitään vuorovaikutusta",
+    "Kokemusten, arvojen, ihmissuhteiden ja pohdinnan kautta",
+    "Identiteetti rakentuu vähitellen kokemusten ja pohdinnan myötä."
+  ],
+  [
+    "Mikä voi vaikuttaa nuoren minäkuvaan?",
+    "Perhe, ystävät, kulttuuri, kokemukset ja media",
+    "Vain pituus",
+    "Ainoastaan yksi koulupäivä",
+    "Ei mikään ympäristön tekijä",
+    "Perhe, ystävät, kulttuuri, kokemukset ja media",
+    "Minäkuvaan vaikuttavat monet yksilölliset ja sosiaaliset tekijät."
+  ],
+  [
+    "Miksi nuori tarvitsee vertaissuhteita ja turvallisia aikuisia?",
+    "Ne tarjoavat tukea, palautetta ja mahdollisuuden harjoitella ihmissuhteita",
+    "Ne estävät kaiken itsenäistymisen",
+    "Ne korvaavat kaiken muun kehityksen",
+    "Niillä ei ole merkitystä",
+    "Ne tarjoavat tukea, palautetta ja mahdollisuuden harjoitella ihmissuhteita",
+    "Sekä vertaiset että turvalliset aikuiset voivat tukea nuoren hyvinvointia."
+  ],
+  [
+    "Mitä tarkoittaa seksuaalinen suuntautuminen?",
+    "Se, kehen ihminen voi tuntea romanttista tai seksuaalista vetoa",
+    "Ihmisen ammatti",
+    "Vain ihmisen vaatetyyli",
+    "Sama asia kuin sukupuoli-identiteetti",
+    "Se, kehen ihminen voi tuntea romanttista tai seksuaalista vetoa",
+    "Seksuaalinen suuntautuminen ja sukupuoli-identiteetti ovat eri asioita."
+  ],
+  [
+    "Miten sosiaalinen media voi vaikuttaa nuoren kehitykseen?",
+    "Se voi vaikuttaa minäkuvaan ja vertaissuhteisiin, ja vaikutukset vaihtelevat",
+    "Se vaikuttaa aina vain myönteisesti",
+    "Se ei voi vaikuttaa mitenkään",
+    "Se korvaa kaikki kasvokkaiset suhteet",
+    "Se voi vaikuttaa minäkuvaan ja vertaissuhteisiin, ja vaikutukset vaihtelevat",
+    "Sosiaalisen median vaikutukset riippuvat käytöstä ja tilanteesta."
+  ],
+  [
+    "Mikä auttaa nuorta tekemään turvallisempia päätöksiä?",
+    "Tiedon arviointi, seurausten pohtiminen ja luotettavan aikuisen tuki",
+    "Päätösten tekeminen aina kiireessä",
+    "Vertaisten painostuksen seuraaminen",
+    "Riskien sivuuttaminen",
+    "Tiedon arviointi, seurausten pohtiminen ja luotettavan aikuisen tuki",
+    "Päätöksenteko kehittyy harjoittelun ja tuen avulla."
+  ],
+  [
+    "Miten nuoruusajan muutoksia tulisi tarkastella?",
+    "Yksilöllisesti, sillä kehityksen aikataulu ja kokemukset vaihtelevat",
+    "Kaikilla täsmälleen samanlaisina",
+    "Vain fyysisinä muutoksina",
+    "Merkkinä siitä, että kehitys pysähtyy",
+    "Yksilöllisesti, sillä kehityksen aikataulu ja kokemukset vaihtelevat",
+    "Nuorten kehitys etenee yksilöllisesti."
+  ],
+  [
+    "Mikä voi tukea nuoren psyykkistä hyvinvointia?",
+    "Turvalliset ihmissuhteet, uni, mielekäs tekeminen ja mahdollisuus saada apua",
+    "Jatkuva yksin jääminen",
+    "Tunteiden ilmaisun kieltäminen",
+    "Kaikkien ongelmien salaaminen",
+    "Turvalliset ihmissuhteet, uni, mielekäs tekeminen ja mahdollisuus saada apua",
+    "Hyvinvointia tukevat arjen perustarpeet ja turvallinen tuki."
+  ],
+  [
+    "Miten identiteetin muodostuminen liittyy tulevaisuuden suunnitteluun?",
+    "Omat arvot, kiinnostuksen kohteet ja tavoitteet auttavat pohtimaan tulevaisuutta",
+    "Identiteetti estää suunnittelun",
+    "Tulevaisuuden suunnittelu kuuluu vain lapsille",
+    "Näillä asioilla ei ole yhteyttä",
+    "Omat arvot, kiinnostuksen kohteet ja tavoitteet auttavat pohtimaan tulevaisuutta",
+    "Oman identiteetin pohdinta auttaa tekemään itselle sopivia valintoja."
+  ]
+];
 const DICT={
 'kasvu':'sự tăng trưởng','sensitiivinen':'nhạy bén trong việc đáp ứng nhu cầu','uhmaikä':'giai đoạn khẳng định bản thân','moraalinen kehitys':'sự phát triển đạo đức','välttelevä':'né tránh','ristiriitainen':'mâu thuẫn','ambivalentti':'lưỡng lự, vừa muốn gần vừa chống đối','jäsentymätön':'không có tổ chức rõ ràng','vertaissuhde':'quan hệ với bạn đồng trang lứa','generatiivisuus':'quan tâm đến thế hệ sau và đóng góp cho cộng đồng','parisuhde':'mối quan hệ đôi lứa','keski-ikä':'tuổi trung niên','vanhuusikä':'tuổi già','persoonallisuus':'nhân cách','abstrakti':'trừu tượng','konkreettinen':'cụ thể','kiintymys':'sự gắn bó','kehitys':'sự phát triển','fyysinen':'thuộc thể chất','psyykkinen':'thuộc tâm lý','sosiaalinen':'thuộc xã hội','kognitiivinen':'thuộc nhận thức','toimintakyky':'khả năng hoạt động / chức năng','elämänkaari':'vòng đời','vauva':'em bé','kiintymyssuhde':'mối quan hệ gắn bó','hoiva':'sự chăm sóc, nâng niu','vuorovaikutus':'sự tương tác','leikki':'trò chơi / chơi','koulukypsyys':'sự sẵn sàng đi học','valmius':'sự sẵn sàng, năng lực chuẩn bị','murrosikä':'tuổi dậy thì','nuoruus':'tuổi trẻ / tuổi thanh thiếu niên','identiteetti':'bản sắc, nhận thức về bản thân','itsenäistyminen':'sự trở nên độc lập','aikuisuus':'tuổi trưởng thành','ikääntyminen':'quá trình lão hóa / già đi','ikääntynyt':'người cao tuổi','voimavara':'nguồn lực, điểm mạnh','voimavarat':'nguồn lực, điểm mạnh','kasvupyrähdys':'giai đoạn tăng trưởng nhanh','puberteetti':'tuổi dậy thì / giai đoạn thành thục sinh dục','temperamentti':'khí chất','oppiminen':'việc học tập','muisti':'trí nhớ','tarkkaavaisuus':'sự chú ý','empatia':'sự đồng cảm','kriisi':'khủng hoảng','suru':'nỗi buồn, sự đau buồn','resilienssi':'khả năng phục hồi và thích nghi','havainnointi':'sự quan sát','pitkittäistutkimus':'nghiên cứu theo chiều dọc','poikittaistutkimus':'nghiên cứu cắt ngang','kertahaastattelu':'phỏng vấn một lần','kehitystehtävä':'nhiệm vụ phát triển','osallisuus':'sự tham gia và cảm giác thuộc về','yhdenvertaisuus':'bình đẳng trong đối xử','itsemääräämisoikeus':'quyền tự quyết','yksilöllinen':'mang tính cá nhân','yksilöllisyys':'tính cá nhân','asiakas':'khách hàng / người được chăm sóc','hoitaja':'nhân viên chăm sóc','hoitotyö':'công việc chăm sóc','tarve':'nhu cầu','tarpeet':'các nhu cầu','toive':'mong muốn','toiveet':'các mong muốn','tunne':'cảm xúc','tunteet':'các cảm xúc','tunteiden':'của cảm xúc','liikkuminen':'việc di chuyển','hienomotoriikka':'vận động tinh','karkeamotoriikka':'vận động thô','taito':'kỹ năng','taidot':'các kỹ năng','pitkän':'trong thời gian dài','ajan':'thời gian','kuluessa':'trong suốt','samoja':'cùng những','ihmisiä':'những người','seurataan':'được theo dõi','tutkimus':'nghiên cứu','tutkimuksessa':'trong nghiên cứu','haastattelu':'phỏng vấn','havainto':'quan sát','turvallisuus':'sự an toàn','turvallinen':'an toàn','aikuinen':'người lớn','lapsi':'trẻ em','lapsella':'ở trẻ em','ikä':'tuổi','ikävaihe':'giai đoạn tuổi','kehityksen':'của sự phát triển','tarkoittaa':'có nghĩa là','mitä':'cái gì / điều gì','mikä':'cái nào / điều gì','miksi':'tại sao','määrittele':'hãy định nghĩa','nimeä':'hãy kể tên','selitä':'hãy giải thích','anna':'hãy đưa ra','esimerkki':'ví dụ','esimerkiksi':'ví dụ như','kyky':'khả năng','kykyä':'khả năng (đối cách)','muuttuminen':'sự thay đổi','muutoksia':'những thay đổi','eri':'khác nhau','vaihe':'giai đoạn','vaiheet':'các giai đoạn','pitää':'cần / phải','tärkeä':'quan trọng','tärkeää':'quan trọng','tukea':'hỗ trợ','tukee':'hỗ trợ','auttaa':'giúp','lisää':'tăng thêm','vähitellen':'dần dần','yksilöllisesti':'một cách cá nhân hóa','pitää huomioida':'cần chú ý đến',"ensimmäistä":"đầu tiên (dạng đối cách của ensimmäinen)","elinvuotta":"năm đầu đời","syntymän":"của sự sinh ra","syntymä":"sự sinh ra","tarvitsee":"cần","turvallista":"an toàn (dạng phân cách của turvallinen)","varhaista":"sớm (dạng phân cách của varhainen)","vuorovaikutusta":"sự tương tác","pitkäaikainen":"kéo dài","yksinolo":"sự ở một mình","viesti":"tín hiệu, thông điệp","viestit":"các tín hiệu","sivuuttaa":"bỏ qua","jatkuva":"liên tục","kiire":"sự vội vàng, bận rộn","melu":"tiếng ồn","huomaa":"nhận ra, chú ý đến","vastaa":"đáp lại, trả lời","sopivasti":"một cách phù hợp","tarpeensa":"nhu cầu của mình","harjoittelee":"luyện tập","liikkumista":"việc di chuyển","kieltä":"ngôn ngữ","itsenäisyyttä":"sự độc lập","itsenäisyys":"sự độc lập","eläkkeelle":"về hưu","valmistautumista":"sự chuẩn bị","johtamista":"sự lãnh đạo","taloudellista":"thuộc tài chính","vastuuta":"trách nhiệm","tunteiden":"của cảm xúc","säätely":"sự điều tiết","tunteiden säätely":"điều tiết cảm xúc","lukeminen":"việc đọc","keskustelu":"cuộc trò chuyện","yhteinen":"chung, cùng nhau","yhteinen leikki":"trò chơi cùng nhau","symbolinen":"mang tính biểu tượng","esine":"đồ vật","esineellä":"bằng đồ vật","toiminnalla":"bằng hành động","esitetään":"được thể hiện / biểu diễn","jotakin":"một điều gì đó","muuta":"khác","ryhmässä":"trong nhóm","toimimista":"việc hoạt động","sääntöjä":"các quy tắc","aloitusvalmiuksia":"các khả năng sẵn sàng bắt đầu","aloittaa":"bắt đầu","koulunkäynti":"việc đi học","keskittyminen":"sự tập trung","ikätasoinen":"phù hợp với lứa tuổi","täydellistä":"hoàn toàn, hoàn hảo","osaamista":"năng lực, sự thành thạo","tyypillistä":"điển hình","varhainen":"sớm","kouluikä":"tuổi đi học","konkreettinen":"cụ thể","esimerkkien":"của các ví dụ","havaintojen":"của các quan sát","avulla":"nhờ vào, bằng cách","pohtiminen":"việc suy ngẫm","päättely":"sự suy luận","päättelyn":"của sự suy luận","näyttämällä":"bằng cách làm gương","seurauksista":"về các hậu quả","mielikuvitus":"trí tưởng tượng","mielikuvitusta":"trí tưởng tượng","samanaikaisesti":"đồng thời","näkökulma":"góc nhìn","näkökulmien":"của các góc nhìn","vuorovaikutustilanne":"tình huống tương tác","vuorovaikutustilanteita":"các tình huống tương tác","kuunteleminen":"việc lắng nghe","vuorottelu":"việc thay phiên nhau","ristiriitojen":"của các mâu thuẫn","ratkaiseminen":"việc giải quyết","hoivaava":"chăm sóc, nâng niu","hoivaajan":"của người chăm sóc","tunneside":"mối liên kết tình cảm","tunnesidettä":"mối liên kết tình cảm","tarvittaessa":"khi cần thiết","turvasatama":"nơi trú ẩn an toàn","johdonmukainen":"nhất quán","läheisyys":"sự gần gũi","lohdutus":"sự an ủi","rauhoitettavissa":"có thể được trấn an","ristiriitaisia":"mâu thuẫn","sekavia":"rối loạn, không rõ ràng","asianmukainen":"phù hợp, đúng chuyên môn","asiantuntemus":"chuyên môn","myöhempi":"sau này","myöhempiin":"đến những giai đoạn sau","ihmissuhde":"mối quan hệ giữa người với người","ihmissuhteisiin":"đến các mối quan hệ","luottamus":"sự tin tưởng","määrää":"quyết định, chi phối","tulevaisuus":"tương lai","murrosiän":"của tuổi dậy thì","hormonaalinen":"thuộc hormone","hormonaalisia":"các thay đổi thuộc hormone","kehon":"của cơ thể","mittasuhteet":"tỷ lệ cơ thể","koordinaatio":"sự phối hợp vận động","suunnittelu":"việc lập kế hoạch","arviointi":"sự đánh giá","arvioida":"đánh giá","vertaissuhteita":"các mối quan hệ bạn bè cùng trang lứa","arvot":"các giá trị","arvostaa":"coi trọng","kehitystehtävä":"nhiệm vụ phát triển","kehitystehtäviä":"các nhiệm vụ phát triển","elämäntilanne":"tình huống cuộc sống","vaihtelevat":"thay đổi, khác nhau","seuraava":"tiếp theo","sukupolvi":"thế hệ","sukupolvesta":"về thế hệ","yhteisö":"cộng đồng","yhteisölle":"cho cộng đồng","tutustuminen":"việc làm quen","viestintä":"giao tiếp","yhteiset":"chung","päätös":"quyết định","päätöksiä":"các quyết định","kompromissi":"sự thỏa hiệp","kompromissien":"các sự thỏa hiệp","etsiminen":"việc tìm kiếm","perheenjäsentä":"thành viên gia đình","rooli":"vai trò","roolien":"của các vai trò","vastuu":"trách nhiệm","vastuiden":"của các trách nhiệm","lapsen syntymä":"sự ra đời của đứa trẻ","itsenäistyminen":"sự trở nên độc lập","eläköityminen":"việc nghỉ hưu","taloudellinen":"thuộc tài chính","paine":"áp lực","paineet":"các áp lực","yhteensovittaminen":"việc dung hòa, sắp xếp cho phù hợp","fyysinen toimintakyky":"khả năng hoạt động thể chất","aistitoiminto":"chức năng giác quan","aistitoiminnot":"các chức năng giác quan","menetys":"sự mất mát","menetyksiä":"các mất mát","sopeutuminen":"sự thích nghi","toimintakykyä":"khả năng hoạt động","omatoimisuus":"tính tự chủ","asiakkaan":"của khách hàng/người được chăm sóc","huomioi":"chú ý, xem xét","kannustaa":"khuyến khích","mahdollistaa":"tạo điều kiện","kokonaisvaltainen":"toàn diện","tarkastelu":"việc xem xét","vaikuttavat":"ảnh hưởng đến","perimä":"di truyền","ympäristö":"môi trường","kokemukset":"các trải nghiệm","yksilöllisyys":"tính cá nhân","ihmisarvo":"phẩm giá con người","itsemääräämisoikeus":"quyền tự quyết","voimavarat":"nguồn lực, điểm mạnh","tutkimusmenetelmä":"phương pháp nghiên cứu","pitkittäistutkimuksessa":"trong nghiên cứu theo chiều dọc","poikittaistutkimuksessa":"trong nghiên cứu cắt ngang","tiettynä":"vào một thời điểm nhất định","ajankohta":"thời điểm","ajankohtana":"vào thời điểm","haastatteluhetki":"thời điểm phỏng vấn","näkemyksistä":"về các quan điểm","osoita":"chỉ ra, chứng minh","järjestelmällinen":"có hệ thống","seuraaminen":"việc theo dõi","kirjaaminen":"việc ghi chép","ero":"sự khác biệt","eroa":"khác biệt","eroa on":"có sự khác biệt","määritellä":"định nghĩa","kuvaile":"hãy mô tả","kuvailevan":"mô tả","mainitse":"hãy nêu","kerro":"hãy kể / trình bày","selitä":"hãy giải thích","millä":"bằng cách nào","miten":"như thế nào","miksi":"tại sao","mikä":"điều gì / cái nào","mitä":"cái gì / điều gì","voi":"có thể","voivat":"có thể","tukee":"hỗ trợ","tukea":"hỗ trợ","tukevat":"hỗ trợ","tärkeä":"quan trọng","tärkeää":"quan trọng","tärkeät":"quan trọng","lapsen kehitys":"sự phát triển của trẻ","fyysinen kehitys":"sự phát triển thể chất","motorinen kehitys":"sự phát triển vận động","kognitiivinen kehitys":"sự phát triển nhận thức","psykososiaalinen kehitys":"sự phát triển tâm lý-xã hội","tunne-elämän kehitys":"sự phát triển đời sống cảm xúc","persoonallisuuden kehitys":"sự phát triển nhân cách","itsenäistymisen":"sự trở nên độc lập","itsenäistymistä":"sự trở nên độc lập","itsenäistymiseen":"đến sự trở nên độc lập","itsenäistymisensä":"sự tự lập của mình","kehitystehtäviin":"đến các nhiệm vụ phát triển","kehitystehtävien":"của các nhiệm vụ phát triển","kehitysvaihe":"giai đoạn phát triển","kehitysvaiheita":"các giai đoạn phát triển","kehitysvaiheisiin":"đến các giai đoạn phát triển","kehitysvaiheiden":"của các giai đoạn phát triển","ihmisen":"của con người","ihmisten":"của những người","psyykkinen":"thuộc tâm lý","sosiaalinen":"thuộc xã hội","kehitys":"sự phát triển","kehityksen":"của sự phát triển","kehitystä":"sự phát triển","kehitykselle":"cho sự phát triển","kehityksessä":"trong sự phát triển","kehityksestä":"về sự phát triển","kehitykseen":"vào sự phát triển","kehityksensä":"sự phát triển của mình","motorinen":"thuộc vận động","kognitiivinen":"thuộc nhận thức","emotionaalinen":"thuộc cảm xúc","psykososiaalinen":"thuộc tâm lý-xã hội","persoonallisuuden":"của nhân cách","vanhuusiän":"của tuổi già","nuoruusiän":"của tuổi thanh thiếu niên","aikuisuuden":"của tuổi trưởng thành","keski-iän":"của tuổi trung niên","lapsuudessa":"trong thời thơ ấu","lapsuudesta":"từ thời thơ ấu","lapsuuden":"của thời thơ ấu","itsenäistymisen ja oman tahdon harjoittelua":"việc trở nên độc lập và rèn luyện ý chí riêng","arviointia":"việc đánh giá","arviointiin":"đến việc đánh giá","seurataan":"được theo dõi","tutkitaan":"được nghiên cứu","pitkän ajan kuluessa":"trong một khoảng thời gian dài","tiettynä ajankohtana":"vào một thời điểm nhất định","määritelmää":"định nghĩa","tarkoittaa":"có nghĩa là","liittyy":"liên quan đến","kuuluu":"thuộc về, bao gồm","kuulua":"thuộc về, bao gồm","voimavaroja":"các nguồn lực, điểm mạnh","toimintakyvyn":"của khả năng hoạt động","toimintakyky":"khả năng hoạt động","toimintakykyä":"khả năng hoạt động","omatoimisuutta":"tính tự chủ","yksilöllinen":"mang tính cá nhân","yksilöllisiä":"mang tính cá nhân","yksilöllisesti":"một cách khác nhau tùy từng người","turvallisuuden tunnetta":"cảm giác an toàn","tunne-elämän":"của đời sống cảm xúc","tunne-elämä":"đời sống cảm xúc","vuorovaikutuksen":"của sự tương tác","vuorovaikutuksessa":"trong sự tương tác","varhaiset":"những điều sớm/ban đầu","varhaisten":"của những điều ban đầu","kokemuksilla":"bằng các trải nghiệm","kokemuksiin":"đến các trải nghiệm","kokemusten":"của các trải nghiệm","hoiva":"sự chăm sóc ân cần","hoivaan":"vào sự chăm sóc","hoivassa":"trong sự chăm sóc","hoivasta":"từ sự chăm sóc","hoivalla":"bằng sự chăm sóc","hoivata":"chăm sóc ân cần","kasvattaa":"nuôi dạy","kasvattaminen":"việc nuôi dạy","kasvattamisena":"dưới hình thức nuôi dạy","huolehtia":"chăm lo","huolehtiminen":"việc chăm lo","yhteensovittaa":"dung hòa, sắp xếp cho phù hợp","ristiriita":"mâu thuẫn","ristiriitoja":"các mâu thuẫn","ristiriidat":"các mâu thuẫn","ristiriidoista":"về các mâu thuẫn","luottamuksen":"của sự tin tưởng","läheisyyttä":"sự gần gũi","läheisyyden":"của sự gần gũi","tutkimuksessa":"trong nghiên cứu","tutkimus":"nghiên cứu","tutkimuksen":"của nghiên cứu","pitkittäistutkimus":"nghiên cứu theo chiều dọc","poikittaistutkimus":"nghiên cứu cắt ngang","kertahaastattelu":"phỏng vấn một lần","havainnointi":"sự quan sát có hệ thống","havainnoinnissa":"trong việc quan sát","haastattelu":"phỏng vấn","haastattelussa":"trong cuộc phỏng vấn","haastattelun":"của cuộc phỏng vấn","tunne":"cảm xúc","tunteita":"các cảm xúc","tunteiden":"của cảm xúc","rauhallinen":"bình tĩnh","joustavuus":"sự linh hoạt","sopeutua":"thích nghi","sopeutumista":"sự thích nghi","merkityksellisyys":"ý nghĩa, sự có ý nghĩa","merkityksellisyyden":"của ý nghĩa","vanhempi":"cha/mẹ, người lớn","hoivaaja":"người chăm sóc","hoivaajaa":"người chăm sóc","hoivaajalta":"từ người chăm sóc","tutkia":"nghiên cứu, khám phá","ympäristöä":"môi trường","ympäristön":"của môi trường","vuorovaikutus":"sự tương tác","turvallinen":"an toàn","turvallisuutta":"sự an toàn","johdonmukaisuus":"tính nhất quán","johdonmukaista":"nhất quán","herkkä":"nhạy cảm","sensitiivisyys":"sự nhạy bén trong đáp ứng","vastata":"đáp lại","vastaa":"đáp lại","vastuuntunto":"ý thức trách nhiệm","vastuuntunnon":"của ý thức trách nhiệm","ihmissuhteet":"các mối quan hệ","ihmissuhteiden":"của các mối quan hệ","ihmissuhteiden arviointia":"việc đánh giá các mối quan hệ","toimintatapa":"cách hành xử","toimintatapojen":"của các cách hành xử","muotoutuminen":"sự hình thành","muotoutumista":"sự hình thành","perimän":"của di truyền"
 };
-let mode='mc',count=20,session=[],idx=0,score=0,answered=0,locked=false,quizType='main',vocabSession=[],vocabIdx=0,vocabScore=0,activeWord='';
+let mode='mc',count=20,currentBank=BANK,selectedSubject='current',session=[],idx=0,score=0,answered=0,locked=false,quizType='main',vocabSession=[],vocabIdx=0,vocabScore=0,activeWord='';
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 let vocab=load('ll_vocab',[]),stats=load('ll_stats',{sessions:0,answered:0,correct:0});
 const save=()=>{localStorage.setItem('ll_vocab',JSON.stringify(vocab));localStorage.setItem('ll_stats',JSON.stringify(stats));renderVocab();renderStats();queueCloudSave()};
@@ -280,9 +732,11 @@ function shuffle(a){let b=[...a];for(let i=b.length-1;i>0;i--){let j=Math.floor(
 function wordsHTML(s){return esc(s).replace(/[A-Za-zÄÖÅäöå]+/g,w=>`<span class="word" data-word="${w.replace(/"/g,'')}">${w}</span>`)}
 function setView(id){$$('.view').forEach(v=>v.classList.toggle('active',v.id===id));$$('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(id==='vocabulary')renderVocab();if(id==='progress')renderStats()}
 $$('.tabs button').forEach(b=>b.onclick=()=>setView(b.dataset.view));
-$$('#modeOptions button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('#modeOptions button').forEach(x=>x.classList.toggle('selected',x===b));$$('#countOptions button').forEach(x=>{x.disabled=(mode==='mc'&&+x.dataset.count>50)||(mode==='write'&&+x.dataset.count>50);if(x.disabled&&x.classList.contains('selected'))x.classList.remove('selected')});if((mode!=='all')&&count>50)count=50;let valid=$(`#countOptions button[data-count="${count}"]`);if(valid)valid.classList.add('selected')});
+$('#subjectSelect').onchange=()=>{selectedSubject=$('#subjectSelect').value;currentBank=selectedSubject==='ihmisen50'?IHMISEN_BANK:BANK;$('#bankCount').textContent=selectedSubject==='ihmisen50'?'50':'100';$('#sourceNote').style.display=selectedSubject==='ihmisen50'?'block':'none';const modeBtns=$$('#modeOptions button');if(selectedSubject==='ihmisen50'){mode='mc';modeBtns.forEach(x=>{x.classList.toggle('selected',x.dataset.mode==='mc');x.disabled=x.dataset.mode!=='mc'});count=Math.min(count,50);$$('#countOptions button').forEach(x=>{x.disabled=+x.dataset.count>50;x.classList.toggle('selected',+x.dataset.count===count)})}else{modeBtns.forEach(x=>x.disabled=false);modeBtns.forEach(x=>x.classList.toggle('selected',x.dataset.mode===mode));$$('#countOptions button').forEach(x=>{x.disabled=(mode==='mc'&&+x.dataset.count>50)||(mode==='write'&&+x.dataset.count>50);x.classList.toggle('selected',+x.dataset.count===count)})}$('#quizArea').innerHTML='<div class="empty">Bộ câu hỏi đã chọn. Bấm “Bắt đầu quiz ngẫu nhiên” để bắt đầu.</div>';};
+$('#toggleCloudBtn').onclick=()=>{const card=$('#cloudSyncCard'),open=card.style.display==='none';card.style.display=open?'block':'none';$('#toggleCloudBtn').setAttribute('aria-expanded',String(open));};
+$$('#modeOptions button').forEach(b=>b.onclick=()=>{if(b.disabled)return;mode=b.dataset.mode;$$('#modeOptions button').forEach(x=>x.classList.toggle('selected',x===b));$$('#countOptions button').forEach(x=>{x.disabled=(mode==='mc'&&+x.dataset.count>50)||(mode==='write'&&+x.dataset.count>50);if(x.disabled&&x.classList.contains('selected'))x.classList.remove('selected')});if((mode!=='all')&&count>50)count=50;let valid=$(`#countOptions button[data-count="${count}"]`);if(valid)valid.classList.add('selected')});
 $$('#countOptions button').forEach(b=>b.onclick=()=>{if(b.disabled)return;count=+b.dataset.count;$$('#countOptions button').forEach(x=>x.classList.toggle('selected',x===b))});
-function startMain(){let arr=[];if(mode==='mc'||mode==='all')BANK.forEach((q,i)=>arr.push({type:'mc',q,i}));if(mode==='write'||mode==='all')WRITES.forEach((q,i)=>arr.push({type:'write',q,i}));session=shuffle(arr).slice(0,Math.min(count,arr.length));idx=0;score=0;answered=0;locked=false;quizType='main';renderQuestion()}
+function startMain(){let arr=[];if(mode==='mc'||mode==='all')currentBank.forEach((q,i)=>arr.push({type:'mc',q,i}));if((mode==='write'||mode==='all')&&selectedSubject==='current')WRITES.forEach((q,i)=>arr.push({type:'write',q,i}));session=shuffle(arr).slice(0,Math.min(count,arr.length));idx=0;score=0;answered=0;locked=false;quizType='main';renderQuestion()}
 function renderQuestion(){let root=$('#quizArea');if(idx>=session.length){stats.sessions++;stats.answered+=answered;stats.correct+=score;save();root.innerHTML=`<div class="empty"><h2>Hoàn thành lượt học</h2><p>Bạn trả lời đúng <b>${score}/${answered}</b> câu đã chấm tự động.</p><p class="muted">Với câu tự viết, hãy tự so sánh với đáp án mẫu.</p><button class="primary" id="again">Làm lượt mới</button></div>`;$('#again').onclick=startMain;return}
 let item=session[idx],q=item.q;locked=false;
 let html=`<div class="headrow"><div><span class="pill">${item.type==='mc'?'MULTIPLE CHOICE':'TỰ VIẾT'}</span><div class="muted small" style="margin-top:7px">Câu ${idx+1}/${session.length} · Đúng ${score}</div></div><span class="muted small">Xáo trộn ngẫu nhiên</span></div><div class="progress"><span style="width:${idx/session.length*100}%"></span></div><div class="question">${wordsHTML(q[0])}</div>`;
@@ -337,7 +791,8 @@ function recallMatches(typed,target,type){
    // Also accept a multi-word answer if its words form a meaningful contiguous phrase in the saved definition.
    if(a.length>=3 && (` ${b} `).includes(` ${a} `))return true;
  }
- // Finnish word recall: permit punctuation/case differences, but not loose substring matching.
+ // Finnish word recall: permit case/punctuation differences and a meaningful partial answer (3+ characters).
+ if(type==='word' && a.length>=3 && (b.includes(a) || a.includes(b)))return true;
  return false;
 }
 function renderVocabQ(){let root=$('#vocabQuizArea');if(vocabIdx>=vocabSession.length){root.innerHTML=`<div class="empty"><h2>Hoàn thành!</h2><p>Điểm: ${vocabScore}/${vocabSession.length}</p><button class="primary" id="vagain">Làm lại với thứ tự mới</button></div>`;$('#vagain').onclick=startVocab;return}
@@ -346,8 +801,8 @@ let checked=false;
 $('#vspeak').onclick=()=>{activeWord=v.word;$('#modalWordInput').value=v.word;$('#speakWord').click()};
 $('#vskip').onclick=()=>{vocabIdx++;renderVocabQ()};
 $('#vwrite').addEventListener('keydown',e=>{if(e.key==='Enter'&&!checked)$('#vcheck').click()});
-$('#vcheck').onclick=()=>{if(checked)return;let typed=$('#vwrite').value;let target=type==='meaning'?v.meaning:v.word;let ok=recallMatches(typed,target,type);checked=true;if(ok)vocabScore++;$('#vfeedback').innerHTML=`<div class="feedback ${ok?'good':'bad'}"><b>${ok?'Đúng rồi!':'Chưa chính xác.'}</b><div>${type==='meaning'?'Nghĩa tiếng Việt':'Từ tiếng Phần Lan'}: <strong>${esc(target||'Chưa có đáp án')}</strong></div>${v.note?`<div class="small">${esc(v.note)}</div>`:''}</div>`;$('#vwrite').disabled=true;$('#vcheck').disabled=true;$('#vnext').disabled=false};
-$('#vnext').onclick=()=>{vocabIdx++;renderVocabQ()}}
+$('#vcheck').onclick=()=>{if(checked)return;let typed=$('#vwrite').value;let target=type==='meaning'?v.meaning:v.word;let ok=recallMatches(typed,target,type);$('#vwrite').disabled=true;$('#vcheck').disabled=true;if(ok){checked=true;vocabScore++;$('#vfeedback').innerHTML=`<div class="feedback good"><b>Đúng rồi!</b><div>${type==='meaning'?'Nghĩa tiếng Việt':'Từ tiếng Phần Lan'}: <strong>${esc(target||'Chưa có đáp án')}</strong></div>${v.note?`<div class="small">${esc(v.note)}</div>`:''}</div>`;$('#vnext').disabled=false;return}$('#vfeedback').innerHTML=`<div class="feedback bad"><b>Chưa chính xác — hãy nhập lại để tiếp tục.</b><div>Đáp án đúng: <strong>${esc(target||'Chưa có đáp án')}</strong></div><div class="small muted">Bạn có thể gõ lại đáp án đầy đủ hoặc một phần cụm nghĩa hợp lệ. Nút sang câu tiếp theo chỉ mở sau khi câu trả lời được chấp nhận.</div><input class="field" id="vretry" autocomplete="off" placeholder="Gõ lại đáp án đúng..." style="margin-top:10px"><div class="row" style="margin-top:8px"><button class="primary" id="vretryCheck">Xác nhận đáp án</button></div><div id="vretryFeedback" class="small" style="margin-top:6px"></div></div>`;$('#vretry').focus();$('#vretry').addEventListener('keydown',e=>{if(e.key==='Enter')$('#vretryCheck').click()});$('#vretryCheck').onclick=()=>{let retry=$('#vretry').value;let accepted=recallMatches(retry,target,type);if(accepted){checked=true;$('#vretryFeedback').textContent='Đúng rồi! Bạn có thể chuyển sang câu tiếp theo.';$('#vretryFeedback').style.color='var(--good)';$('#vretry').disabled=true;$('#vretryCheck').disabled=true;$('#vnext').disabled=false}else{$('#vretryFeedback').textContent='Chưa đúng. Hãy thử lại; bạn có thể nhập một phần nghĩa hợp lệ.';$('#vretryFeedback').style.color='var(--bad)';$('#vretry').focus()}}};
+$('#vnext').onclick=()=>{if(!checked)return;vocabIdx++;renderVocabQ()}}
 
 function renderStats(){$('#pSessions').textContent=stats.sessions;$('#pAnswered').textContent=stats.answered;$('#pCorrect').textContent=stats.correct;$('#pRate').textContent=(stats.answered?Math.round(stats.correct/stats.answered*100):0)+'%'}
 $('#clearProgress').onclick=()=>{if(confirm('Xóa toàn bộ thống kê?')){stats={sessions:0,answered:0,correct:0};save()}};
